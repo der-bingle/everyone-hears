@@ -68,8 +68,9 @@ let getByDateAndLight = async (date, lightID) => {
 
   gotOpts.json = { query, variables };
   let response = await got(gotOpts).then(res => handleError(res));
-
-  return response.data.listWeeks.items[0]
+  let week = response.data.listWeeks.items[0];
+  let neighbors = week.neighbors.items.map(it => it.neighbor)
+  return {...week, neighbors}
 }
 
 // ## CONNECTIONS ##

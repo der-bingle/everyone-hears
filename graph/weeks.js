@@ -18,7 +18,23 @@ query GetWeekByDateAndLight($date: String, $lightID: ID!) {
       }
       neighbors {
         items {
-          id
+          neighbor {
+            firstName
+            lastName
+            secondPersonName
+            address {
+              number
+              street
+            }
+            location {
+              lat
+              lon
+            }
+            details {
+              maritalStatus
+              householdSize
+            }
+          }
         }
       }
     }

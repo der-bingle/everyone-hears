@@ -1,9 +1,10 @@
 const create = require("./create");
 const graph = require("../graph");
 
-let singleCard = async (date, lightID) => {
+let singleCard = async (kind, date, lightID) => {
   let week = await graph.get.weekByDateAndLight(date, lightID)
-  return week
+  console.dir(week, {depth: 5})
+  return create(kind, week)
 }
 
 module.exports = singleCard;

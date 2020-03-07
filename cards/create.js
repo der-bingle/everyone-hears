@@ -1,51 +1,85 @@
-const { createCanvas, loadImage } = require('canvas')
-const canvas = createCanvas(200, 1100)
-const ctx = canvas.getContext('2d')
+const R = require("ramda")
+const fs = require('fs')
+const { createCanvas, registerFont, loadImage } = require('canvas')
 
-// Convert from 72 pt/in to 300 px/in
-let pointsToPixels = n => n / 72 * 300;
-
-let dimensions = {
-  width: 264,
-  height: 576,
-  margin: 18,
-  smallSectionsHeight: 159,
-  bigsectionHeight: 258,
-  heading: 14,
-  details: 12,
-  leading: 2,
-  headingFontSize: 15,
-  detailFontSize: 12,
-  mapWidth: 228,
+let getFilename = (kind, week) => {
+  let name = week.light.name.replace(/\s?[,&]?\s/g, "-").toLowerCase();
+  if (kind === "PDF") {
+    return `${name}-week-${week.num}.pdf`
+  } else {
+    return `${name}-week-${week.num}.png`
+  }
 }
 
-Object.entries(dimensions).forEach(([key, value]) => console.log(`${key}: ${pointsToPixels(value)}`));
+let dim = {
+  cardWidth: 1100,
+  cardHeight: 2400,
+  margin: 35,
+  smallSectionsHeight: 662.5,
+  bigsectionHeight: 1075,
+  heading: 58.333333333333336,
+  details: 50,
+  leading: 8.333333333333332,
+  headingFontSize: 62.5,
+  detailFontSize: 50,
+  mapWidth: 950
+}
+dim.width = dim.cardWidth - dim.margin * 2;
+dim.center = dim.cardWidth / 2;
 
-// var cardWidth = 264;
-// var height = 576;
-// ctx.fillStyle = "white";
-// ctx.fillRect(0, 0, 1242, 2688);
-// ctx.font = titleFont;
-// ctx.fillStyle = "black";
-// ctx.textAlign = "center";
-// ctx.fillText(card.title, 621, 675, 1170);
-// ctx.textAlign = "left";
-// // Write "Awesome!"
-// ctx.font = '30px Impact'
-// ctx.rotate(0.1)
-// ctx.fillText('Awesome!', 50, 100)
 
-// // Draw line under text
-// var text = ctx.measureText('Awesome!')
-// ctx.strokeStyle = 'rgba(0,0,0,0.5)'
-// ctx.beginPath()
-// ctx.lineTo(50, 102)
-// ctx.lineTo(50 + text.width, 102)
-// ctx.stroke()
+// # Register Fonts
+registerFont("./assets/source-serif-light-italic.otf", { family: "Source Serif Pro", weight: "light", style: "italic" });
+registerFont("./assets/source-sans-semibold.otf", { family: "Source Sans Pro", weight: "semibold", style: "regular" });
 
-// // Draw cat with lime helmet
-// loadImage('examples/images/lime-cat.jpg').then((image) => {
-//   ctx.drawImage(image, 50, 0, 70, 70)
+let titleFont = "light italic 68px Source Serif Pro";
+let headingFont = "semibold regular 72px Source Sans Pro";
+let detailsFont = "light italic 54px Source Serif Pro";
 
-//   console.log('<img src="' + canvas.toDataURL() + '" />')
-// })
+let getTitle = week => `${week.light.name}, Week ${week.num}`;
+
+let newCanvas = filename => {
+  const out = fs.createWriteStream(filename)
+  const canvas = createCanvas(dim.cardWidth, dim.cardHeight)
+  const stream = canvas.createPNGStream()
+  stream.pipe(out)
+  const context = canvas.getContext('2d')
+  context.textDrawingMode = 'path';
+  return context
+}
+
+let whiteBackground = (ctx) => {
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, dim.cardWidth, dim.cardHeight);
+}
+
+let addLogo = async (ctx) => {
+  const logo = await loadImage("./assets/logo.png");
+  return ctx.drawImage(logo, 36, 36);
+}
+
+let addTitle = (week, ctx) => {
+  ctx.font = titleFont;
+  ctx.fillStyle = "black";
+  ctx.textAlign = "center";
+  return ctx.fillText(getTitle(week), dim.center, 626);
+}
+
+let addNeighbors = (ctx, week) => {
+  ctx.textAlign = "left";
+  ctx.font = titleFont;
+}
+
+let main = async (kind, week) => {
+  let filename = getFilename(kind, week);
+  let context = newCanvas(filename)
+
+  whiteBackground(context)
+  addTitle(week, context)
+  
+  await addLogo(context)
+
+  return filename
+}
+
+module.exports = main;
