@@ -65,9 +65,26 @@ let addTitle = (week, ctx) => {
   return ctx.fillText(getTitle(week), dim.center, 626);
 }
 
-let addNeighbors = (ctx, week) => {
-  ctx.textAlign = "left";
-  ctx.font = titleFont;
+let getneighborTitle = (neighbor) => {
+  let { firstName, lastName, secondName } = neighbor;
+  let { maritalStatus } = neighbor.details;
+
+  if (secondName) {
+    if (maritalStatus === true) {
+      return `${firstName} & ${secondName} ${lastName},`
+    } else {
+      return `${firstName} ${lastName}, ${secondName}`
+    }
+  } else {
+    return `${firstName} ${lastName}`
+  }
+}
+
+let addNeighbors = (week, context) => {
+  let titles = week.neighbors.map(getneighborTitle)
+  console.log(titles)
+  // ctx.textAlign = "left";
+  // ctx.font = titleFont;
 }
 
 let main = async (kind, week) => {
@@ -76,7 +93,7 @@ let main = async (kind, week) => {
 
   whiteBackground(context)
   addTitle(week, context)
-  
+  addNeighbors(week, context)
   await addLogo(context)
 
   return filename
