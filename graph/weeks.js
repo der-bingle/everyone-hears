@@ -33,6 +33,10 @@ query GetWeekByDateAndLight($date: String, $lightID: ID!) {
             details {
               maritalStatus
               householdSize
+              age {
+                min
+                max
+              }
             }
           }
         }

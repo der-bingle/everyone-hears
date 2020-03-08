@@ -1,6 +1,31 @@
-const R = require("ramda")
 const fs = require('fs')
-const { createCanvas, registerFont, loadImage } = require('canvas')
+const R = require("ramda")
+const got = require("got");
+const PDFDocument = require('pdfkit');
+const appRoot = require('app-root-path');
+
+
+let font = {
+  title: "Source Serif Light Italic",
+  heading: "Source Sans Semibold",
+  details: "Source Serif Light Italic",
+  size: {
+    title: 16,
+    heading: 15,
+    details: 12
+  }
+}
+
+let dim = {
+  cardWidth: 1100,
+  cardHeight: 2550,
+  margin: 36,
+};
+
+dim.width = dim.cardWidth - dim.margin * 2;
+
+let textOpts = { width: dim.width }
+
 
 let getFilename = (kind, week) => {
   let name = week.light.name.replace(/\s?[,&]?\s/g, "-").toLowerCase();
@@ -11,92 +36,40 @@ let getFilename = (kind, week) => {
   }
 }
 
-let dim = {
-  cardWidth: 1100,
-  cardHeight: 2400,
-  margin: 35,
-  smallSectionsHeight: 662.5,
-  bigsectionHeight: 1075,
-  heading: 58.333333333333336,
-  details: 50,
-  leading: 8.333333333333332,
-  headingFontSize: 62.5,
-  detailFontSize: 50,
-  mapWidth: 950
-}
-dim.width = dim.cardWidth - dim.margin * 2;
-dim.center = dim.cardWidth / 2;
-
-
-// # Register Fonts
-registerFont("./assets/source-serif-light-italic.otf", { family: "Source Serif Pro", weight: "light", style: "italic" });
-registerFont("./assets/source-sans-semibold.otf", { family: "Source Sans Pro", weight: "semibold", style: "regular" });
-
-let titleFont = "light italic 68px Source Serif Pro";
-let headingFont = "semibold regular 72px Source Sans Pro";
-let detailsFont = "light italic 54px Source Serif Pro";
-
 let getTitle = week => `${week.light.name}, Week ${week.num}`;
 
-let newCanvas = filename => {
-  const out = fs.createWriteStream(filename)
-  const canvas = createCanvas(dim.cardWidth, dim.cardHeight)
-  const stream = canvas.createPNGStream()
-  stream.pipe(out)
-  const context = canvas.getContext('2d')
-  context.textDrawingMode = 'path';
-  return context
-}
-
-let whiteBackground = (ctx) => {
-  ctx.fillStyle = "white";
-  ctx.fillRect(0, 0, dim.cardWidth, dim.cardHeight);
-}
-
-let addLogo = async (ctx) => {
-  const logo = await loadImage("./assets/logo.png");
-  return ctx.drawImage(logo, 36, 36);
-}
-
-let addTitle = (week, ctx) => {
-  ctx.font = titleFont;
-  ctx.fillStyle = "black";
-  ctx.textAlign = "center";
-  return ctx.fillText(getTitle(week), dim.center, 626);
-}
-
-let getneighborTitle = (neighbor) => {
-  let { firstName, lastName, secondName } = neighbor;
-  let { maritalStatus } = neighbor.details;
-
-  if (secondName) {
-    if (maritalStatus === true) {
-      return `${firstName} & ${secondName} ${lastName},`
-    } else {
-      return `${firstName} ${lastName}, ${secondName}`
-    }
-  } else {
-    return `${firstName} ${lastName}`
+let newDocument = filename => {
+  let docOpts = {
+    size: [264, 612],
+    margin: 0,
+    layout: "portrait",
   }
+
+  const doc = new PDFDocument(docOpts);
+  doc.pipe(fs.createWriteStream(filename));
+
+  doc.registerFont("Source Serif Light Italic", `${appRoot}/assets/source-serif-light-italic.otf`)
+  doc.registerFont("Source Sans Semibold", `${appRoot}/assets/source-sans-semibold.otf`);
+
+  return doc
 }
 
-let addNeighbors = (week, context) => {
-  let titles = week.neighbors.map(getneighborTitle)
-  console.log(titles)
-  // ctx.textAlign = "left";
-  // ctx.font = titleFont;
+let addTitle = (week, doc) => {
+  doc.font(font.title).fontSize(font.size.title)
+  doc.text(`${week.light.name}, Week ${week.num}`, textOpts)
 }
 
 let main = async (kind, week) => {
-  let filename = getFilename(kind, week);
-  let context = newCanvas(filename)
+  try {
+    let filename = getFilename(kind, week);
+    let doc = newDocument(filename)
 
-  whiteBackground(context)
-  addTitle(week, context)
-  addNeighbors(week, context)
-  await addLogo(context)
-
-  return filename
+    addTitle(week, doc)
+    doc.end()
+    return filename
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 module.exports = main;
