@@ -62,6 +62,16 @@ let createWeek = async (input) => {
   return response.data.createWeek.id
 }
 
+let getWeeksByDate = async (date) => {
+  let variables = { date };
+  let query = weeks.getByDate;
+
+  gotOpts.json = { query, variables };
+  let response = await got(gotOpts).then(res => handleError(res));
+  let corrected = response.data.listWeeks.items.map(week => ({...week, neighbors: week.neighbors.items.map(it => it.neighbor)} ));
+  return corrected
+}
+
 let getByDateAndLight = async (date, lightID) => {
   let variables = { date, lightID };
   let query = weeks.getByDateAndLight;
@@ -99,6 +109,7 @@ let updatePrayerCount = async (input) => {
 module.exports.get = {
   allLightsWithNeighbors,
   oneLightWithNeighbors,
+  weeksByDate: getWeeksByDate,
   weekByDateAndLight: getByDateAndLight,
 }
 
